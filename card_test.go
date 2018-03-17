@@ -78,7 +78,13 @@ func TestCreateCard(t *testing.T) {
 		IDList: "57f03a06b5ff33a63c8be316",
 	}
 
-	err := c.CreateCard(&card, Arguments{"pos": "top"})
+	err := c.CreateCard(
+		&card,
+		Arguments{
+			"pos": "top",
+			"idLabels": "1,2",
+		},
+	)
 	if err != nil {
 		t.Error(err)
 	}

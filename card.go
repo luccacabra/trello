@@ -129,6 +129,9 @@ func (c *Client) CreateCard(card *Card, extraArgs Arguments) error {
 	if pos, ok := extraArgs["pos"]; ok {
 		args["pos"] = pos
 	}
+	if idLabels, ok := extraArgs["idLabels"]; ok {
+		args["idLabels"] = idLabels
+	}
 	err := c.Post(path, args, &card)
 	if err == nil {
 		card.client = c
