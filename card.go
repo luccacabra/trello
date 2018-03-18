@@ -7,11 +7,11 @@ package trello
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/google/go-querystring/query"
 )
 
 type Card struct {
@@ -77,6 +77,20 @@ type Card struct {
 	Labels []*Label `json:"labels,omitempty"`
 }
 
+type CardQueryArguments struct {
+	Desc           string    `url:"desc"`
+	Due            string    `url:"due"`
+	DueComplete    bool      `url:"dueComplete"`
+	IDCardSource   string    `url:"idCardSource"`
+	IDLabels       []string  `url:"idLabels"`
+	IDList         string    `url:"idList"`
+	IDMembers      []string  `url:"idMembers"`
+	KeepFromSource string    `url:"keepFromSource"`
+	Name           string    `url:"name"`
+	Pos            int       `url:"pos"`
+	URLSource      string    `url:"urlSource"`
+}
+
 func (c *Card) CreatedAt() time.Time {
 	t, _ := IDToTime(c.ID)
 	return t
@@ -113,26 +127,18 @@ func (c *Card) Update(args Arguments) error {
 	return c.client.Put(path, args, c)
 }
 
-func (c *Client) CreateCard(card *Card, extraArgs Arguments) error {
+func (c *Client) CreateCard(card *Card, args CardQueryArguments) error {
 	path := "cards"
-	args := Arguments{
-		"name":      card.Name,
-		"desc":      card.Desc,
-		"pos":       strconv.FormatFloat(card.Pos, 'g', -1, 64),
-		"idList":    card.IDList,
-		"idMembers": strings.Join(card.IDMembers, ","),
+	params, err := query.Values(args)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse CreateCard query params %v: ", args)
 	}
-	if card.Due != nil {
-		args["due"] = card.Due.Format(time.RFC3339)
+	req, err := c.NewRequest("POST", path, params)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CreateCard request")
 	}
-	// Allow overriding the creation position with 'top' or 'botttom'
-	if pos, ok := extraArgs["pos"]; ok {
-		args["pos"] = pos
-	}
-	if idLabels, ok := extraArgs["idLabels"]; ok {
-		args["idLabels"] = idLabels
-	}
-	err := c.Post(path, args, &card)
+
+	_, err = c.Client.Do(req)
 	if err == nil {
 		card.client = c
 	}

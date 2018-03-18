@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"net/http"
 	"time"
 
@@ -229,6 +230,25 @@ func (c *Client) Delete(path string, args Arguments, target interface{}) error {
 	}
 
 	return nil
+}
+
+func (c *Client) NewRequest(method, path string, params url.Values) (*http.Request, error) {
+	if c.Key != "" {
+		params.Set("key", c.Key)
+	}
+
+	if c.Token != "" {
+		params.Set("token", c.Token)
+	}
+
+	rURL := fmt.Sprintf("%s/%s", c.BaseURL, path)
+	req, err := http.NewRequest(method, rURL, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Invalid %s request %s", method, rURL)
+	}
+
+	req.URL.RawQuery = params.Encode()
+	return req, nil
 }
 
 func (c *Client) log(format string, args ...interface{}) {
